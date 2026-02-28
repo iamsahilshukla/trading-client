@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased;
+  }
+}
+
+@layer components {
+  .glass {
+    background: rgba(16, 23, 34, 0.6);
+    @apply backdrop-blur-xl border border-white/10;
+  }
+
+  .chart-bg {
+    background-image: radial-gradient(circle at 2px 2px, rgba(60, 131, 246, 0.05) 1px, transparent 0);
+    background-size: 40px 40px;
+  }
+
+  .ticker-wrap {
+    @apply overflow-hidden whitespace-nowrap;
+  }
+
+  .ticker-content {
+    @apply inline-block animate-[ticker_30s_linear_infinite];
+  }
+
+  @keyframes ticker {
+    0% {
+      transform: translateX(0);
+    }
+
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+}
