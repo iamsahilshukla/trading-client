@@ -250,19 +250,6 @@ const DashboardPage = () => {
                                 </div>
                             </motion.div>
 
-                            {/* Market Movers */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <MarketMoverCard title="Top Gainers" type="gain" items={[
-                                    { symbol: 'TATASTEEL', price: 141.25, change: '+4.82%', vol: '12M' },
-                                    { symbol: 'ADANIPORTS', price: 1284.6, change: '+3.15%', vol: '4.2M' },
-                                    { symbol: 'JSWSTEEL', price: 822.4, change: '+2.90%', vol: '2.1M' },
-                                ]} />
-                                <MarketMoverCard title="Top Losers" type="loss" items={[
-                                    { symbol: 'WIPRO', price: 478.2, change: '-2.41%', vol: '8.5M' },
-                                    { symbol: 'TITAN', price: 3612.45, change: '-1.85%', vol: '1.1M' },
-                                    { symbol: 'TECHM', price: 1245.9, change: '-1.68%', vol: '1.8M' },
-                                ]} />
-                            </div>
                         </div>
 
                         {/* Right Column: Watchlist */}
@@ -289,57 +276,5 @@ const DashboardPage = () => {
     );
 };
 
-
-const MarketMoverCard = ({ title, type, items }: any) => (
-    <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        className={cn(
-            "bg-slate-900/40 backdrop-blur-md rounded-2xl border border-white/5 overflow-hidden",
-            type === 'gain' ? "border-t-2 border-t-emerald-500" : "border-t-2 border-t-rose-500"
-        )}
-    >
-        <div className="p-4 flex items-center justify-between">
-            <h3 className="font-bold text-sm flex items-center gap-2">
-                {type === 'gain' ? <TrendingUp className="text-emerald-500 w-4 h-4" /> : <TrendingDown className="text-rose-500 w-4 h-4" />}
-                {title}
-            </h3>
-            <span className="text-[10px] font-bold text-slate-500">TODAY</span>
-        </div>
-        <div className="px-4 pb-4 space-y-3">
-            {items.map((item: any) => (
-                <div key={item.symbol} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/[0.03] transition-colors">
-                    <div>
-                        <p className="font-bold text-xs uppercase tracking-tight text-white">{item.symbol}</p>
-                        <p className="text-[10px] text-slate-500">₹{item.price.toLocaleString()}</p>
-                    </div>
-                    <div className="text-right">
-                        <p className={cn("font-bold text-xs", type === 'gain' ? "text-emerald-500" : "text-rose-500")}>{item.change}</p>
-                        <p className="text-[10px] text-slate-500">Vol: {item.vol}</p>
-                    </div>
-                </div>
-            ))}
-        </div>
-    </motion.div>
-);
-
-const WatchlistItem = ({ symbol, ltp, change, isUp, trend }: any) => (
-    <div className="flex items-center justify-between p-4 rounded-xl hover:bg-white/[0.04] transition-all cursor-pointer group">
-        <div className="w-1/3">
-            <p className="font-bold text-sm text-white group-hover:text-primary transition-colors">{symbol}</p>
-            <p className="text-[10px] text-slate-500 font-bold uppercase">NSE</p>
-        </div>
-        <div className="flex-1 h-8 px-4">
-            <svg className={cn("w-full h-full fill-none stroke-2", isUp ? "stroke-emerald-500" : "stroke-rose-500")} viewBox="0 0 100 30">
-                <polyline points={trend.map((p: number, i: number) => `${(i / (trend.length - 1)) * 100},${30 - p}`).join(' ')} />
-            </svg>
-        </div>
-        <div className="w-1/3 text-right">
-            <p className="font-bold text-sm text-white">₹{ltp.toLocaleString()}</p>
-            <p className={cn("text-[10px] font-bold", isUp ? "text-emerald-500" : "text-rose-500")}>{change}</p>
-        </div>
-    </div>
-);
 
 export default DashboardPage;

@@ -30,6 +30,7 @@ const PortfolioPage = () => {
     const navigate = useNavigate();
     const [portfolio, setPortfolio] = useState<any>(null);
     const [holdings, setHoldings] = useState<any[]>([]);
+    const [indices, setIndices] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -56,6 +57,14 @@ const PortfolioPage = () => {
                     console.error('Error fetching dashboard data', error);
                 } finally {
                     setLoading(false);
+                }
+
+                // Market indices — optional, failure must not affect portfolio display
+                try {
+                    const quoteRes = await api.get('/market/quote?symbols=NSE:NIFTY%2050,NSE:NIFTY%20BANK&broker=GROWW');
+                    setIndices(quoteRes.data);
+                } catch (error) {
+                    console.error('Error fetching market indices', error);
                 }
             }
         };
@@ -85,20 +94,61 @@ const PortfolioPage = () => {
                 {/* Top Header */}
                 <header className="h-16 border-b border-white/5 bg-slate-950/40 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-10">
                     <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-3 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
-                            <span className="text-xs font-bold text-emerald-500">NIFTY 50</span>
-                            <span className="text-sm font-bold text-emerald-500">22,419.50</span>
-                            <span className="text-[11px] font-bold text-emerald-500 flex items-center">
-                                <Triangle className="w-2 h-2 fill-current mr-1" /> +1.2%
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-3 bg-rose-500/10 px-3 py-1.5 rounded-lg border border-rose-500/20">
-                            <span className="text-xs font-bold text-rose-500">BANK NIFTY</span>
-                            <span className="text-sm font-bold text-rose-500">47,285.40</span>
-                            <span className="text-[11px] font-bold text-rose-500 flex items-center">
-                                <Triangle className="w-2 h-2 fill-current mr-1 rotate-180" /> -0.4%
-                            </span>
-                        </div>
+                        {/* NIFTY 50 */}
+                        {(() => {
+                            const nifty = indices?.['NSE:NIFTY 50'];
+                            const ltp = nifty?.last_price || 0;
+                            const change = nifty?.net_change || 0;
+                            const prevClose = ltp - change;
+                            const pctChange = prevClose > 0 ? (change / prevClose) * 100 : 0;
+                            const isPositive = change >= 0;
+
+                            return (
+                                <div className={cn(
+                                    "flex items-center gap-3 px-3 py-1.5 rounded-lg border",
+                                    isPositive ? "bg-emerald-500/10 border-emerald-500/20" : "bg-rose-500/10 border-rose-500/20"
+                                )}>
+                                    <span className={cn("text-xs font-bold", isPositive ? "text-emerald-500" : "text-rose-500")}>NIFTY 50</span>
+                                    <span className={cn("text-sm font-bold", isPositive ? "text-emerald-500" : "text-rose-500")}>
+                                        {ltp > 0 ? ltp.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '---'}
+                                    </span>
+                                    {ltp > 0 && (
+                                        <span className={cn("text-[11px] font-bold flex items-center", isPositive ? "text-emerald-500" : "text-rose-500")}>
+                                            <Triangle className={cn("w-2 h-2 fill-current mr-1", !isPositive && "rotate-180")} />
+                                            {isPositive ? '+' : ''}{change.toFixed(2)} ({pctChange.toFixed(2)}%)
+                                        </span>
+                                    )}
+                                </div>
+                            );
+                        })()}
+
+                        {/* BANK NIFTY */}
+                        {(() => {
+                            const bankNifty = indices?.['NSE:NIFTY BANK'];
+                            const ltp = bankNifty?.last_price || 0;
+                            const change = bankNifty?.net_change || 0;
+                            const prevClose = ltp - change;
+                            const pctChange = prevClose > 0 ? (change / prevClose) * 100 : 0;
+                            const isPositive = change >= 0;
+
+                            return (
+                                <div className={cn(
+                                    "flex items-center gap-3 px-3 py-1.5 rounded-lg border",
+                                    isPositive ? "bg-emerald-500/10 border-emerald-500/20" : "bg-rose-500/10 border-rose-500/20"
+                                )}>
+                                    <span className={cn("text-xs font-bold", isPositive ? "text-emerald-500" : "text-rose-500")}>BANK NIFTY</span>
+                                    <span className={cn("text-sm font-bold", isPositive ? "text-emerald-500" : "text-rose-500")}>
+                                        {ltp > 0 ? ltp.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '---'}
+                                    </span>
+                                    {ltp > 0 && (
+                                        <span className={cn("text-[11px] font-bold flex items-center", isPositive ? "text-emerald-500" : "text-rose-500")}>
+                                            <Triangle className={cn("w-2 h-2 fill-current mr-1", !isPositive && "rotate-180")} />
+                                            {isPositive ? '+' : ''}{change.toFixed(2)} ({pctChange.toFixed(2)}%)
+                                        </span>
+                                    )}
+                                </div>
+                            );
+                        })()}
                     </div>
 
                     <div className="flex items-center gap-4">

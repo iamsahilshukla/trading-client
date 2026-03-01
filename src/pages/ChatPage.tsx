@@ -3,18 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import {
-    Menu,
-    Bell,
     Zap,
     User,
     Send,
-    Paperclip,
-    Database,
-    History,
-    Triangle,
     Loader2
 } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
+import { WishlistWidget } from '../components/dashboard/WishlistWidget';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useAuth } from '../context/AuthContext';
@@ -182,46 +177,14 @@ const ChatPage = () => {
             <Sidebar />
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col h-full bg-slate-950/20 overflow-hidden relative">
-                {/* Top Navbar */}
-                <header className="h-16 border-b border-white/5 bg-slate-950/40 backdrop-blur-md flex items-center justify-between px-8 z-10 shrink-0">
-                    <div className="flex items-center gap-4">
-                        <Menu className="text-slate-400 cursor-pointer lg:hidden w-5 h-5" />
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-slate-500">Market Status:</span>
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                <span className="text-[10px] font-bold uppercase">NSE OPEN</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-6">
-                        <div className="hidden md:flex items-center gap-4">
-                            <div className="text-right">
-                                <p className="text-[10px] text-slate-500 font-bold uppercase">NIFTY 50</p>
-                                <p className="text-sm font-bold">22,147.20 <span className="text-emerald-500 font-medium text-xs">+0.45%</span></p>
-                            </div>
-                            <div className="w-[1px] h-8 bg-white/10"></div>
-                            <div className="text-right">
-                                <p className="text-[10px] text-slate-500 font-bold uppercase">RELIANCE</p>
-                                <p className="text-sm font-bold">2,945.10 <span className="text-emerald-500 font-medium text-xs">+1.20%</span></p>
-                            </div>
-                        </div>
-                        <button className="relative p-2 text-slate-400 hover:bg-white/5 rounded-lg transition-colors">
-                            <Bell className="w-5 h-5" />
-                            <span className="absolute top-2 right-2 size-2 bg-rose-500 rounded-full border-2 border-slate-950"></span>
-                        </button>
-                    </div>
-                </header>
-
+            <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
                 {/* Chat Interface */}
                 <div
                     ref={scrollRef}
                     className="flex-1 overflow-y-auto p-4 lg:p-8 space-y-8 max-w-5xl mx-auto w-full custom-scrollbar"
                 >
                     <AnimatePresence initial={false}>
-                        {messages.map(msg => (
+                        {messages.filter(msg => !(isStreaming && msg.role === 'assistant' && msg.content === '')).map(msg => (
                             <motion.div
                                 key={msg.id}
                                 initial={{ opacity: 0, y: 10 }}
@@ -287,8 +250,8 @@ const ChatPage = () => {
                             animate={{ opacity: 1 }}
                             className="flex gap-4"
                         >
-                            <div className="size-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                                <Loader2 className="text-primary w-5 h-5 animate-spin" />
+                            <div className="size-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary/20">
+                                <Zap className="text-white w-6 h-6 fill-current" />
                             </div>
                             <div className="bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl rounded-tl-none border border-white/10">
                                 <div className="flex gap-1">
@@ -304,25 +267,7 @@ const ChatPage = () => {
                 {/* Input Area */}
                 <div className="p-4 lg:p-8 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent shrink-0">
                     <div className="max-w-5xl mx-auto relative">
-                        <div className="flex flex-col bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
-                            {/* Quick Tools Bar */}
-                            <div className="px-4 py-2 border-b border-white/5 flex items-center justify-between">
-                                <div className="flex gap-4">
-                                    <QuickTool icon={<Paperclip className="w-3.5 h-3.5" />} label="Upload CSV" />
-                                    <QuickTool icon={<Database className="w-3.5 h-3.5" />} label="Live Markets" />
-                                    <QuickTool icon={<History className="w-3.5 h-3.5" />} label="Historical" />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                                        AI Level: Expert
-                                    </span>
-                                    <div className="w-12 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                                        <div className="w-4/5 h-full bg-primary"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Main Input */}
+                        <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
                             <form
                                 onSubmit={e => {
                                     e.preventDefault();
@@ -368,129 +313,12 @@ const ChatPage = () => {
                         </p>
                     </div>
                 </div>
-
-                {/* Floating Assistant Icon */}
-                <button className="fixed bottom-8 right-8 size-14 bg-primary text-white rounded-full shadow-2xl shadow-primary/40 flex items-center justify-center group z-50">
-                    <div className="absolute inset-0 bg-primary rounded-full animate-ping opacity-20 group-hover:opacity-0 transition-opacity"></div>
-                    <Zap className="w-7 h-7 fill-current" />
-                    <div className="absolute bottom-full right-0 mb-4 scale-0 group-hover:scale-100 transition-transform origin-bottom-right">
-                        <div className="bg-slate-900 border border-white/10 text-white text-[10px] font-bold py-2 px-3 rounded-lg shadow-xl whitespace-nowrap">
-                            Quick Command (Alt + K)
-                        </div>
-                    </div>
-                </button>
             </main>
 
-            {/* Right Sidebar */}
-            <aside className="hidden xl:flex w-80 border-l border-white/5 bg-slate-950/40 flex-col shrink-0">
-                <div className="p-6 border-b border-white/5">
-                    <h2 className="text-sm font-bold mb-4 text-white uppercase tracking-widest text-xs opacity-60">
-                        Market Watchlist
-                    </h2>
-                    <div className="space-y-4">
-                        <WatchItem symbol="AAPL" name="Apple Inc." price="182.52" change="-0.82%" isUp={false} />
-                        <WatchItem symbol="NVDA" name="NVIDIA Corp." price="924.11" change="+2.14%" isUp={true} />
-                        <WatchItem symbol="BTC" name="Bitcoin" price="68,412" change="+1.15%" isUp={true} />
-                    </div>
-                </div>
-
-                <div className="p-6 flex-1 flex flex-col min-h-0">
-                    <h2 className="text-sm font-bold mb-4 text-white uppercase tracking-widest text-xs opacity-60">
-                        Real-time Signals
-                    </h2>
-                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1">
-                        <SignalItem
-                            type="bullish"
-                            title="Bullish Scanner"
-                            text="HDFC Bank showing RSI divergence on 1h chart."
-                            time="Just now"
-                        />
-                        <SignalItem
-                            type="warning"
-                            title="Volume Alert"
-                            text="High selling volume detected in IT sector indices."
-                            time="12 mins ago"
-                        />
-                        <SignalItem
-                            type="info"
-                            title="Macro Update"
-                            text="Fed Chairman Powell to speak at 7:00 PM EST."
-                            time="1 hour ago"
-                        />
-                    </div>
-                </div>
-
-                <div className="p-6 border-t border-white/5 bg-slate-900/20">
-                    <div className="bg-primary/10 rounded-xl p-4 border border-primary/20 text-center">
-                        <p className="text-[10px] font-bold text-primary mb-2 uppercase">Portfolio Value</p>
-                        <p className="text-2xl font-bold tracking-tight text-white">$142,504.20</p>
-                        <div className="flex items-center justify-center gap-1 text-emerald-500 mt-1">
-                            <Triangle className="w-2.5 h-2.5 fill-current" />
-                            <span className="text-xs font-bold">+$2,104.50 (1.5%)</span>
-                        </div>
-                    </div>
-                </div>
+            {/* Right Sidebar - Watchlist */}
+            <aside className="hidden xl:flex w-80 border-l border-white/5 bg-slate-950/40 shrink-0">
+                <WishlistWidget />
             </aside>
-        </div>
-    );
-};
-
-const QuickTool = ({ icon, label }: { icon: React.ReactNode; label: string }) => (
-    <button className="text-[11px] font-bold text-slate-500 hover:text-primary flex items-center gap-1.5 transition-colors group">
-        <span className="group-hover:text-primary transition-colors">{icon}</span>
-        {label}
-    </button>
-);
-
-const WatchItem = ({
-    symbol,
-    name,
-    price,
-    change,
-    isUp,
-}: {
-    symbol: string;
-    name: string;
-    price: string;
-    change: string;
-    isUp: boolean;
-}) => (
-    <div className="flex items-center justify-between group cursor-pointer">
-        <div>
-            <p className="text-xs font-bold text-white group-hover:text-primary transition-colors">{symbol}</p>
-            <p className="text-[10px] text-slate-500">{name}</p>
-        </div>
-        <div className="text-right">
-            <p className="text-xs font-bold text-white">{price}</p>
-            <p className={cn('text-[10px] font-bold', isUp ? 'text-emerald-500' : 'text-rose-500')}>{change}</p>
-        </div>
-    </div>
-);
-
-const SignalItem = ({
-    type,
-    title,
-    text,
-    time,
-}: {
-    type: 'bullish' | 'warning' | 'info';
-    title: string;
-    text: string;
-    time: string;
-}) => {
-    const styles = {
-        bullish: 'bg-emerald-500/5 border-emerald-500 text-emerald-600',
-        warning: 'bg-amber-500/5 border-amber-500 text-amber-600',
-        info: 'bg-primary/5 border-primary text-primary',
-    }[type];
-
-    return (
-        <div className={cn('p-3 border-l-2 rounded-r-lg', styles)}>
-            <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-black uppercase tracking-wider">{title}</span>
-            </div>
-            <p className="text-xs font-medium text-slate-300">{text}</p>
-            <p className="text-[10px] text-slate-500 mt-1">{time}</p>
         </div>
     );
 };

@@ -12,7 +12,6 @@ import {
     Minus,
     Triangle,
     Timer,
-    LayoutGrid,
     Filter,
     MoreVertical,
     ArrowRight
@@ -34,7 +33,26 @@ const ChartsPage = () => {
     const [quote, setQuote] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [holdings, setHoldings] = useState<any[]>([]);
+    const [portfolio, setPortfolio] = useState<any>(null);
     const chartContainerRef = useRef<HTMLDivElement>(null);
+
+    // Fetch holdings and portfolio for positions panel
+    useEffect(() => {
+        const fetchPortfolioData = async () => {
+            try {
+                const [holdingsRes, summaryRes] = await Promise.all([
+                    api.get('/portfolio/holdings/normalized'),
+                    api.get('/portfolio/summary'),
+                ]);
+                setHoldings(holdingsRes.data.holdings || []);
+                setPortfolio(summaryRes.data);
+            } catch (err) {
+                console.error('Error fetching portfolio data for charts:', err);
+            }
+        };
+        fetchPortfolioData();
+    }, []);
 
     useEffect(() => {
         const fetchQuote = async () => {
@@ -313,17 +331,21 @@ const ChartsPage = () => {
                                                 activeTab === tab ? "text-primary" : "text-slate-500 hover:text-slate-300"
                                             )}
                                         >
-                                            {tab.charAt(0).toUpperCase() + tab.slice(1)} {tab === 'positions' && '(2)'}
+                                            {tab.charAt(0).toUpperCase() + tab.slice(1)} {tab === 'positions' && `(${holdings.length})`}
                                             {activeTab === tab && <motion.div layoutId="tab-active" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
                                         </button>
                                     ))}
                                 </div>
-                                <div className="ml-auto flex items-center gap-4 text-xs">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-slate-500">Today's P&L:</span>
-                                        <span className="text-emerald-500 font-bold">₹+1,240.45</span>
+                                {portfolio?.positions?.dayPnl !== undefined && (
+                                    <div className="ml-auto flex items-center gap-4 text-xs">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-slate-500">Today's P&L:</span>
+                                            <span className={cn("font-bold", portfolio.positions.dayPnl >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                                {portfolio.positions.dayPnl >= 0 ? '+' : ''}₹{portfolio.positions.dayPnl.toLocaleString()}
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
 
                             <div className="flex-1 overflow-auto custom-scrollbar">
@@ -336,12 +358,27 @@ const ChartsPage = () => {
                                             <th className="px-4 py-2">LTP</th>
                                             <th className="px-4 py-2">P&L</th>
                                             <th className="px-4 py-2">P&L %</th>
-                                            <th className="px-4 py-2">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-white/5">
-                                        <PositionRow symbol="TCS" qty={100} avg={3420.50} ltp={3450.20} pnl={2970} isUp={true} />
-                                        <PositionRow symbol="RELIANCE" qty={50} avg={2510.00} ltp={2495.10} pnl={-745} isUp={false} />
+                                        {holdings.map((h, i) => (
+                                            <PositionRow
+                                                key={i}
+                                                symbol={h.symbol}
+                                                qty={h.quantity}
+                                                avg={h.averagePrice}
+                                                ltp={h.lastPrice}
+                                                pnl={h.pnl}
+                                                isUp={h.pnl >= 0}
+                                            />
+                                        ))}
+                                        {holdings.length === 0 && (
+                                            <tr>
+                                                <td colSpan={6} className="px-4 py-6 text-center text-slate-500 text-xs">
+                                                    No holdings found. Connect a broker to see your positions.
+                                                </td>
+                                            </tr>
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
@@ -383,14 +420,6 @@ const ChartsPage = () => {
                                 </div>
 
                                 <div className="pt-2">
-                                    <div className="flex justify-between text-[11px] mb-1">
-                                        <span className="text-slate-500">Required Margin</span>
-                                        <span className="font-bold text-slate-200">₹69,004.00</span>
-                                    </div>
-                                    <div className="flex justify-between text-[11px] mb-4">
-                                        <span className="text-slate-500">Available Funds</span>
-                                        <span className="text-primary font-bold">₹2,45,000.00</span>
-                                    </div>
                                     <button className="w-full py-3 bg-primary hover:bg-primary/90 text-white text-sm font-bold rounded-lg shadow-xl shadow-primary/20 transition-all flex items-center justify-center gap-2" onClick={() => alert('Order placement coming soon')}>
                                         PLACE BUY ORDER
                                         <ArrowRight className="w-4 h-4" />
@@ -399,34 +428,13 @@ const ChartsPage = () => {
                             </div>
                         </div>
 
-                        {/* Depth / Book */}
+                        {/* Order Book */}
                         <div className="flex-1 flex flex-col overflow-hidden">
                             <div className="px-4 py-3 flex items-center justify-between border-b border-white/5">
                                 <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Order Book</h3>
-                                <div className="flex gap-2">
-                                    <Filter className="text-slate-600 w-3.5 h-3.5" />
-                                    <MoreVertical className="text-slate-600 w-3.5 h-3.5" />
-                                </div>
                             </div>
-
-                            <div className="flex-1 overflow-hidden flex flex-col text-[10px] font-mono">
-                                {/* Asks */}
-                                <div className="flex-1 flex flex-col-reverse justify-start">
-                                    <DepthRow price="3,452.45" qty="450" total="1.2k" p={45} color="bg-rose-500/10" textColor="text-rose-500" />
-                                    <DepthRow price="3,451.90" qty="812" total="2.1k" p={80} color="bg-rose-500/10" textColor="text-rose-500" />
-                                    <DepthRow price="3,450.85" qty="540" total="1.6k" p={60} color="bg-rose-500/10" textColor="text-rose-500" />
-                                </div>
-                                {/* Spread */}
-                                <div className="py-1 px-3 bg-slate-950 border-y border-white/5 flex justify-between text-slate-500 font-bold uppercase text-[9px]">
-                                    <span>Spread</span>
-                                    <span className="text-slate-300">0.65 (0.02%)</span>
-                                </div>
-                                {/* Bids */}
-                                <div className="flex-1">
-                                    <DepthRow price="3,450.20" qty="950" total="4.5k" p={75} color="bg-emerald-500/10" textColor="text-emerald-500" reverse />
-                                    <DepthRow price="3,449.65" qty="320" total="3.2k" p={55} color="bg-emerald-500/10" textColor="text-emerald-500" reverse />
-                                    <DepthRow price="3,448.15" qty="1.2k" total="5.1k" p={90} color="bg-emerald-500/10" textColor="text-emerald-500" reverse />
-                                </div>
+                            <div className="flex-1 flex items-center justify-center text-slate-500 text-xs">
+                                Order book data not available yet.
                             </div>
                         </div>
                     </aside>
@@ -439,14 +447,9 @@ const ChartsPage = () => {
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                             <span>Connected</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                            <Timer className="w-3 h-3" />
-                            <span>Latency: 24ms</span>
-                        </div>
                     </div>
                     <div className="flex items-center gap-4">
-                        <span>Market Status: <span className="text-emerald-500 font-bold uppercase">Open</span></span>
-                        <span className="font-mono">IST 14:45:12</span>
+                        <span className="font-mono">{symbol}</span>
                     </div>
                 </footer>
             </div>
@@ -458,30 +461,15 @@ const PositionRow = ({ symbol, qty, avg, ltp, pnl, isUp }: any) => (
     <tr className="hover:bg-white/[0.02] transition-colors border-b border-white/[0.02]">
         <td className="px-4 py-3 font-semibold text-white">{symbol}</td>
         <td className="px-4 py-3 font-mono text-slate-300">{qty}</td>
-        <td className="px-4 py-3 font-mono text-slate-500">₹{avg.toLocaleString()}</td>
-        <td className="px-4 py-3 font-mono text-slate-200">₹{ltp.toLocaleString()}</td>
+        <td className="px-4 py-3 font-mono text-slate-500">₹{avg?.toLocaleString()}</td>
+        <td className="px-4 py-3 font-mono text-slate-200">₹{ltp?.toLocaleString()}</td>
         <td className={cn("px-4 py-3 font-mono font-bold", isUp ? "text-emerald-500" : "text-rose-500")}>
-            {isUp ? '+' : ''}₹{pnl.toLocaleString()}
+            {isUp ? '+' : ''}₹{pnl?.toLocaleString()}
         </td>
         <td className={cn("px-4 py-3 font-mono", isUp ? "text-emerald-500" : "text-rose-500")}>
-            {isUp ? '+' : ''}{((pnl / (qty * avg)) * 100).toFixed(2)}%
-        </td>
-        <td className="px-4 py-3">
-            <button className="text-primary hover:underline font-bold">Close</button>
+            {qty && avg ? `${isUp ? '+' : ''}${((pnl / (qty * avg)) * 100).toFixed(2)}%` : '--'}
         </td>
     </tr>
-);
-
-const DepthRow = ({ price, qty, total, p, color, textColor, reverse }: any) => (
-    <div className="flex items-center relative py-1 px-3 hover:bg-white/5 transition-colors group">
-        <div
-            className={cn("absolute h-full transition-all duration-500", color, reverse ? "left-0" : "right-0")}
-            style={{ width: `${p}%` }}
-        />
-        <span className={cn("w-1/3 relative z-10", textColor)}>{price}</span>
-        <span className="text-slate-300 w-1/3 text-center relative z-10">{qty}</span>
-        <span className="text-slate-500 w-1/3 text-right relative z-10">{total}</span>
-    </div>
 );
 
 export default ChartsPage;
